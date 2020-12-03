@@ -2,6 +2,8 @@
 
 Here I keep some tools for working with upstream Manila and upstream manila-csi plugin using a libvirt qemu/kvm Ubuntu guest VM running on a Fedora 33 host.
 
+## Goal
+
 I prefer using Fedora as a development environment but upstream Manila usses Ubuntu Focal Fossa for CI testing so it is helpful to
 have a devstack environment running Ubuntu Focal Fossa where the devstack code itself and the code under development live on the Fedora
 host and are exposed to the guest VM via a virtio-fs mount.  Similarly, I am using KIND (Kubenetes in Docker) as a very lightweight multinode
@@ -25,3 +27,20 @@ for the virtio-fs mounts.
 I'm starting to work on virtio-fs support for Manila remote mounts in Nova, so using a development environment that makes use of the virtio-fs and the
 emerging support for it in libvirt and qemu/kvm is helpful for developing familiarity and competence with the same technologies that we want to use from
 Nova itself.
+
+The guest VM is set up with a non-root user with the same UID/GID as the
+user on the host setting it up.  This makes it straightforward to edit
+files on the host and execute them on the guest (or tweak them there)
+without running into permission issues.
+
+## VM Setup
+
+  * _setup_the_guest.sh_  uses libvirt client and other VM maanagement
+    commands to fetch an ubuntu cloud image, resize it, edit its domain
+    definition for the mounts mentioned above.  The host machine is set
+    up with /opt/stack and /opt/go and corresponding virtiofsd processes
+    are set up to service these.
+
+  * _cleanup_the_guest.sh_ is the inverse of _setup_the_guest.sh_
+
+  * _get-ip.sh_ prints the IP at which you can ssh to the guest VM.
