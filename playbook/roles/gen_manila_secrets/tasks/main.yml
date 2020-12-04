@@ -1,0 +1,22 @@
+- name: clean csi-manila-secrets
+  command: kubectl delete secret csi-manila-secrets
+  failed_when: false
+
+- name: generate csi-manila-secrets
+  shell: |
+    # . "{{ ansible_env.HOME }}/demorc"
+    . "{{ ansible_env.HOME }}/demorc"
+    cat << YAML | kubectl apply -f -
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: csi-manila-secrets
+          namespace: default
+        stringData:
+          os-authURL: "$OS_AUTH_URL"
+          os-region: "$OS_REGION_NAME"
+          os-userName: "$OS_USERNAME"
+          os-password: "$OS_PASSWORD"
+          os-projectName: "$OS_PROJECT_NAME"
+          os-domainID: "$OS_USER_DOMAIN_ID"
+    YAML

@@ -1,0 +1,65 @@
+---
+
+- name: "focal server playbook"
+  hosts: target
+
+  tasks:
+
+  - name: install packages
+    import_role:
+      name: install_packages
+    tags:
+      - install_packages
+      - devstack
+      - csi
+
+  - name: install golang
+    import_role:
+      name: install_golang
+    tags:
+      - install_golang
+      - csi
+
+  - name: install kind
+    import_role:
+      name: install_kind
+    tags:
+      - install_kind
+      - csi
+
+  - name: install helm
+    import_role:
+      name: install_helm
+    tags:
+      - install_helm
+      - csi
+
+  - name: deploy devstack
+    import_role:
+      name: deploy_devstack
+    tags:
+      - deploy_devstack
+      - devstack
+
+  # Deploy K8s cluster
+  - name: deploy K8s cluster
+    import_role:
+      name: deploy_k8s_cluster
+    tags:
+      - deploy_k8s_cluster
+      - csi
+
+  # Deploy Manila CSI plugin in the K8s cluster
+  #
+  - name: deploy manila csi
+    import_role:
+      name: deploy_manila_csi
+    tags:
+      - deploy_manila_csi
+      - csi
+
+  - name: sanity_test
+    import_role:
+      name: sanity_test
+    tags:
+      sanity_test

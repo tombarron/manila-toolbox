@@ -1,0 +1,41 @@
+---
+- name: install gimme
+  become: true
+  get_url:
+    url: https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+    dest: /usr/local/bin/gimme
+    mode: 'u=rwx,go=rx'
+
+- name: set gimme for stable version
+  command: gimme -r stable
+  changed_when: false
+
+- name: see if golang was already installed by gimme
+  command: gimme -l
+  register: result
+  ignore_errors: true
+  changed_when: false
+
+- name: install golang
+  command: gimme stable
+  when: result.rc != 0
+
+- name: make sure /etc/profile.d exists
+  become: yes
+  file:
+    path: /etc/profile.d
+    state: directory
+    owner: root
+    group: root
+    mode: 'u=rwx,go=rx'
+
+- name: export Go language SDK environment variables
+  become: yes
+  command: "install -m 0644 {{ ansible_env.HOME }}/.gimme/envs/latest.env /etc/profile.d/golang.sh"
+  args:
+    creates: /etc/profile.d/golang.sh
+
+## unfortunately this doesn't work
+## see https://www.reddit.com/r/ansible/comments/en94nh/meta_reset_connection_not_working_on_ansible_291/
+- name: reset ansible's ssh connection so the new profile takes effect
+  meta: reset_connection

@@ -1,0 +1,11 @@
+---
+all:
+  hosts:
+    local:
+      ansible_host: localhost
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+    target:
+      ansible_host: <fill-me-in>
+      ansible_python_interpreter: /usr/bin/python3
+

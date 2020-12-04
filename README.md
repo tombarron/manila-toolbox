@@ -44,3 +44,30 @@ without running into permission issues.
   * _cleanup_the_guest.sh_ is the inverse of _setup_the_guest.sh_
 
   * _get-ip.sh_ prints the IP at which you can ssh to the guest VM.
+
+## devstack and manila csi on the VM
+
+These are set up from the host: `cd playbook; ansible-playbook
+site.yml`.  Before you run, edit *playbook/inventory.yml* to
+indicate the target ansible_host using the IP obtained from
+`get-ip.sh`.
+
+The high level tasks in the playbooks are implemented via roles
+which can be individually selected via tags using a command of the
+form `ansible-playbook site.yml --tags=tag1,...,tagn`.  For convenience
+there are also `devstack` and `csi` tags that will run just the relevant
+roles to set up each of these independently of one another.
+
+When you run the playbook for the first time /opt/stack and /opt/go
+will be populated.  Subsequent runs deliberately do *not* overwrite
+these.   This allows you to keep work in progress even when you destroy
+and re-create the guest VM, or tear down and redeploy devstack or the
+kubernetes cluster.  You can edit them from the host before redeploying,
+or remove them entirely so they are fetched fresh.
+
+Devstack currently uses a playbook/roles/devstack/files/local.conf that
+sets up devstack with the LVM back end.  This choice may change, but
+at the moment is driven by a need to have a software defined back end
+useful for virtiofs development that does not have dependencies on
+externals like Ceph versions that are at this point not easy for us to
+control.

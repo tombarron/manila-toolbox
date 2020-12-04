@@ -1,0 +1,8 @@
+- name: clean snapshot class
+  command: kubectl delete snapshotclass csi-manila-snapshotclass
+  failed_when: false
+
+- name: create snapshot class
+  command: kubectl apply -f examples/manila-csi-plugin/nfs/snapshot/snapshotclass.yaml
+  args:
+    chdir: /opt/go/k8s.io/cloud-provider-openstack

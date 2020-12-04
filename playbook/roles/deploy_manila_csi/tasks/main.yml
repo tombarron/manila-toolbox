@@ -1,0 +1,90 @@
+- name: ensure kubernetes-csi directory
+  become: true
+  file:
+    path: /opt/go/github.com/kubernetes-csi
+    state: directory
+    owner: "{{ ansible_env.USER }}"
+    group: "{{ ansible_env.USER }}"
+
+- name: deploy NFS protocol helper plugin
+  import_role:
+    name: deploy_nfs_helper
+
+- name: get the openstack-cloud-provider repository
+  git:
+    repo: 'https://github.com/kubernetes/cloud-provider-openstack'
+    dest: /opt/go/k8s.io/cloud-provider-openstack
+    update: no
+
+# We rebuild and redploy manila csi plugin unconditionally
+
+- name: remove "latest" manila csi plugin image
+  command: docker rmi k8scloudprovider/manila-csi-plugin:latest
+  ignore_errors: true
+
+- name: make manila csi plugin image
+  shell: |
+    . /etc/profile.d/golang.sh
+    make image-manila-csi-plugin
+  args:
+    chdir: /opt/go/k8s.io/cloud-provider-openstack
+
+- name: get the docker image id
+  command: docker images -q k8scloudprovider/manila-csi-plugin\*
+  register: result
+
+- debug:
+    var: result
+
+- name: tag the local image to match what helm chart will expect
+  command: "docker tag {{ result.stdout }} k8scloudprovider/manila-csi-plugin:latest"
+
+- name: load manila csi plugin image to kind image
+  command: kind load docker-image --name manila-kube k8scloudprovider/manila-csi-plugin:latest
+
+- name: ensure manifests directory
+  file:
+    path: /opt/go/k8s_manifests
+    state: directory
+
+- name: copy nfs-plugin configuration
+  action: copy
+    src=nfs-csi-node-plugin-deployment.yaml
+    dest=/opt/go/k8s_manifests/
+
+- name: deploy nfs csi node plugin
+  command: |
+    kubectl apply -f nfs-csi-node-plugin-deployment.yaml
+  args:
+    chdir: /opt/go/k8s_manifests
+
+- name: copy helmoverride configuration
+  action: copy
+    src=override-helm-values.yaml
+    dest=/opt/go/k8s.io/cloud-provider-openstack
+
+- name: create helm chart for manila-csi plugin
+  become: yes
+  shell: |
+    helm template sharedstorage charts/manila-csi-plugin \
+      -f ./override-helm-values.yaml \
+      > manila-csi-chart.yaml
+  args:
+    chdir: /opt/go/k8s.io/cloud-provider-openstack
+
+- name: deploy manila csi plugin helm chart
+  command: kubectl apply -f manila-csi-chart.yaml
+  args:
+    chdir: /opt/go/k8s.io/cloud-provider-openstack
+
+- name: example storage class
+  import_role:
+    name: build_example_storage_class
+
+- name: deploy external snapshot controller
+  import_role:
+    name: deploy_external_snapshot_controller
+
+- name: example snapshot class
+  import_role:
+    name: build_example_snapshot_class

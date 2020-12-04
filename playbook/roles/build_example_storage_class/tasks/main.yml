@@ -1,0 +1,8 @@
+- name: clean storage class
+  command: kubectl delete storageclass csi-manila-storageclass
+  failed_when: false
+
+- name: create storage class
+  command: kubectl apply -f examples/manila-csi-plugin/nfs/dynamic-provisioning/storageclass.yaml
+  args:
+    chdir: /opt/go/k8s.io/cloud-provider-openstack

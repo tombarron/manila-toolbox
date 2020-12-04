@@ -1,0 +1,28 @@
+- name: is K8s cluster already running?
+  command: kind get clusters
+  failed_when: false
+  changed_when: false
+  register: result
+
+- debug:
+    var: result
+
+- name: deploy k8s cluster via kind
+  block:
+
+    - name: ensure manifests directory
+      file:
+        path: /opt/go/k8s_manifests
+        state: directory
+
+    - name: copy kind-cluster configuration
+      action: copy
+        src=kind-cluster.yaml
+        dest=/opt/go/k8s_manifests/
+
+    - name: deploy K8s cluster via kind
+      command: kind create cluster --name manila-kube --config ./kind-cluster.yaml
+      args:
+        chdir: /opt/go/k8s_manifests
+
+  when: not result.stdout|regex_search('manila-kube')

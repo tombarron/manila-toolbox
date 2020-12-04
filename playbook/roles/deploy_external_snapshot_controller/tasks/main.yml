@@ -1,0 +1,17 @@
+# Snapshot pre-requisites
+# See: https://github.com/kubernetes-csi/external-snapshotter/blob/master/README.md#usage
+- name: get the external-snapshotter repository
+  git:
+    repo: 'https://github.com/kubernetes-csi/external-snapshotter'
+    dest: /opt/go/github.com/kubernetes-csi/external-snapshotter
+    update: no
+
+- name: install snapshot Beta CRDs
+  command: kubectl apply -f client/config/crd
+  args:
+    chdir: /opt/go/github.com/kubernetes-csi/external-snapshotter
+
+- name: install common snapshot Controller
+  command: kubectl apply -f deploy/kubernetes/snapshot-controller
+  args:
+    chdir: /opt/go/github.com/kubernetes-csi/external-snapshotter

@@ -1,0 +1,33 @@
+  - name: update apt repo and cache & install docker
+    become: yes
+    apt:
+      update_cache: yes
+      name: docker.io
+
+  - name: add regular user to docker group
+    become: yes
+    user:
+      name: "{{ ansible_env.USER }}"
+      append: yes
+      groups: docker
+
+  - name: reset ssh connection for the group addition to take effect
+    meta: reset_connection
+
+  - name: enable and start docker service
+    become: yes
+    service: name={{ item }} state=started enabled=yes
+    with_items:
+      - docker
+
+  - name: get groups
+    command: groups
+    register: output
+  - debug:
+      var: output
+
+  - name: run docker
+    command: docker ps
+    register: output
+  - debug:
+      var: output

@@ -1,0 +1,26 @@
+- name: get the csi-driver-nfs repository
+  git:
+    repo: 'https://github.com/kubernetes-csi/csi-driver-nfs'
+    dest: /opt/go/github.com/kubernetes-csi/csi-driver-nfs
+    update: no
+
+- name: do we already have csi-driver-nfs image?
+  command: docker images -q nfsplugin
+  register: docker_nfs_plugin_image_id
+
+- name: build csi-driver-nfs plugin image
+  shell: |
+    . /etc/profile.d/golang.sh
+    git reset --hard v2.0.0  # until make at HEAD on master works again
+    GOPATH=/opt/go make container
+  args:
+    chdir: /opt/go/github.com/kubernetes-csi/csi-driver-nfs
+  when: docker_nfs_plugin_image_id.stdout == ''
+
+- name: is the nfs plugin image already loaded?
+  command: docker exec manila-kube-control-plane crictl images
+  register: crictl_images
+
+- name: load (protocol partner) nfs csi node plugin to kind
+  command: kind load docker-image --name manila-kube nfsplugin:latest
+  when: crictl_images.stdout.find("nfsplugin") == -1

@@ -1,0 +1,53 @@
+# Put /opt/data outside /opt/stack to avoid
+# issues with double level mounts
+- name: ensure /opt/data
+  become: true
+  file:
+    path: /opt/data
+    state: directory
+    owner: "{{ ansible_env.USER }}"
+    group: "{{ ansible_env.USER }}"
+
+- name: clone devstack
+  git: repo=https://git.openstack.org/openstack-dev/devstack
+       dest=/opt/stack/devstack
+       update=no
+
+- name: setup local.conf
+  action: copy
+    src=local.conf
+    dest=/opt/stack/devstack/local.conf
+    mode=0644
+    owner="{{ ansible_env.USER }}"
+    group="{{ ansible_env.USER }}"
+
+- name: check if manila-share service is already running
+  command: systemctl status devstack@m-shr
+  failed_when: false
+  register: result
+
+# devstack is not really idempotent and there is really no
+# guarantee that re-running it will help if the share service
+# isn't running but at least we ensure not to run it again if
+# manila share service is running
+- name: run devstack
+  command: /opt/stack/devstack/stack.sh
+  when: result.rc != 0
+
+- name: generate admin credentials
+  shell: |
+    . /opt/stack/devstack/openrc admin admin
+    env | awk '/^OS_/{printf "export %s\n", $0}' > adminrc
+  args:
+    executable: /bin/bash
+    chdir: "{{ ansible_env.HOME }}"
+    creates: "{{ ansible_env.HOME }}/adminrc"
+
+- name: generate demo credentials
+  shell: |
+    . /opt/stack/devstack/openrc demo demo
+    env | awk '/^OS_/{printf "export %s\n", $0}' > demorc
+  args:
+    executable: /bin/bash
+    chdir: "{{ansible_env.HOME }}"
+    creates: "{{ ansible_env.HOME }}/demorc"

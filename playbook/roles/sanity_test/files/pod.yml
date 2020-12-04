@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-openshift-nfs-pod
+  labels:
+    name: hello-openshift-nfs-pod
+spec:
+  containers:
+    - name: hello-openshift-nfs-pod
+      image: openshift/hello-openshift
+      ports:
+        - name: web
+          containerPort: 80
+      volumeMounts:
+        - name: nfsvol
+          mountPath: /usr/share/nginx/html
+  securityContext:
+      supplementalGroups: [100003]
+  volumes:
+    - name: nfsvol
+      persistentVolumeClaim:
+        claimName: nfs-data

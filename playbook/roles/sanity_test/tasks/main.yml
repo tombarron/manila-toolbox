@@ -1,0 +1,28 @@
+- name: set up manila secrets
+  import_role:
+    name: gen_manila_secrets
+
+- name: ensure manifests directory
+  file:
+    path: /opt/go/k8s_manifests
+    state: directory
+
+- name: copy pvc configuration
+  action: copy
+    src=pvc.yml
+    dest=/opt/go/k8s_manifests/
+
+- name: deploy example pvc
+  command: kubectl apply -f pvc.yml
+  args:
+    chdir: /opt/go/k8s_manifests
+
+- name: copy pod configuration
+  action: copy
+    src=pod.yml
+    dest=/opt/go/k8s_manifests/
+
+- name: deploy example pod
+  command: kubectl apply -f pod.yml
+  args:
+    chdir: /opt/go/k8s_manifests
